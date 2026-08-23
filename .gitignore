@@ -1,3 +1,7 @@
+.gitignore
 /references
+/data
+/programs/Elec3D/
+/programs/Elas3D/
 /Elas3DNew/
 /Elec3DNew/
