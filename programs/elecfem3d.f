@@ -43,21 +43,19 @@ c  STRONGLY SUGGESTED:  READ THE MANUAL BEFORE USING PROGRAM!!
 
 c  (USER) Change these dimensions and in other subroutines at the same time.
 c  For example, search and replace all occurrences throughout the program
-c  of "(8000000" by "(64000", to go from a 20 x 20 x 20 system to a 
+c  of "(8000" by "(64000", to go from a 20 x 20 x 20 system to a 
 c  40 x 40 x 40 system.
-	real u(8000000),gb(8000000),b(8000000),dk(100,8,8)
-        real h(8000000),Ah(8000000)
+	real u(11520000),gb(11520000),b(11520000),dk(100,8,8)
+        real h(11520000),Ah(11520000)
 	real sigma(100,3,3),prob(100)
 	integer in(27),jn(27),kn(27)
-	integer*4 ib(8000000,27)
-        integer*2 pix(8000000)
-	character*40 poreFileName
-	integer iwriteFlag
+	integer*4 ib(11520000,27)
+        integer*2 pix(11520000)
 
 	common/list1/currx,curry,currz
 	common/list2/ex,ey,ez
 	common/list3/ib
-      common/list4/pix
+        common/list4/pix
 	common/list5/dk,b,C
 	common/list6/u
 	common/list7/gb
@@ -66,60 +64,26 @@ c  40 x 40 x 40 system.
 
 c  (USER) Unit 9 is the microstructure input file, unit 7 is
 c  the results output file.
-	  open(unit=8, file='ec3d.pam')
-c        open(9,file='microstructure.dat')
-        open(7,file='outputfile.out')
+        open(9,file='Data1.txt')
+        open(7,file='a.output.dat')
 
 c  (USER) nx,ny,nz give the size of the lattice
-c      nx=20
-c      ny=20
-c      nz=20
+      nx=240
+      ny=240
+      nz=200
 c ns=total number of sites
-		
-	read(8,'(a40)') poreFileName
-	print*, 'Pore File name: ',poreFileName
-
-	read(8,*) nx, ny, nz
-	print*, 'NX, NY, NZ    : ',nx, ny, nz
-
-	read(8,*) gtest
-	print*, 'Conv. Criteria: ',gtest
-
-	read(8,*) kmax
-	print*, 'Max Inversin  : ',kmax
-
-	read(8,*) iwriteFlag
-	print*, 'Write Local Current: ',iwriteFlag
-
-	read(8,*) nphase
-	print*, 'Number of Phase   : ',nphase
-
-	
-	do 6060 n=1,nphase
-		read(8,*) sigma(n,1,1)
-		print*, sigma(n,1,1)
-6060  continue
-	
-	read(8,*) ex,ey,ez
-	print*, 'Electric Filed Applied   : ',ex,ey,ez
-
-	close(8)
-	open (unit=9,file=poreFileName)
-
-
-
       ns=nx*ny*nz
       write(7,9010) nx,ny,nz,ns
 9010  format('nx= ',i4,' ny= ',i4,' nz= ',i4,' ns = ',i8)
 
 c  (USER) nphase is the number of phases being considered in the problem.
 c  The values of pix(m) will run from 1 to nphase.
-c      nphase=2
+      nphase=3
 
 c  (USER) gtest is the stopping criterion, compared to gg=gb*gb.  
 c  gtest=abc*ns, so that when gg < gtest, that average value per pixel
 c  of gb is less than sqrt(abc).
-      gtest=gtest*ns
+      gtest=1.e-16*ns
 
 c  Construct the neighbor table, ib(m,n)
 
@@ -203,21 +167,35 @@ c  (USER) sigma(100,3,3) is the electrical conductivity tensor of each phase
 c  The user can make the value of sigma to be different for each 
 c  phase of the microstructure if so desired (up to 100 phases as currently
 c  dimensioned).
+      sigma(1,1,1)=0.0
+      sigma(1,1,2)=0.0
+      sigma(1,1,3)=0.0
+      sigma(1,2,2)=0.0
+      sigma(1,2,3)=0.0
+      sigma(1,3,3)=0.0
+      sigma(1,2,1)=sigma(1,1,2)
+      sigma(1,3,1)=sigma(1,1,3)
+      sigma(1,3,2)=sigma(1,2,3)
 
-	do 9909 i=1,nphase
-
-      sigma(i,1,2)=0.0
-      sigma(i,1,3)=0.0
-      sigma(i,2,2)=sigma(i,1,1)
-      sigma(i,2,3)=0.0
-      sigma(i,3,3)=sigma(i,1,1)
-      sigma(i,2,1)=sigma(i,1,2)
-      sigma(i,3,1)=sigma(i,1,3)
-      sigma(i,3,2)=sigma(i,2,3)
-
-
-
-9909  continue
+      sigma(2,1,1)=0.1196
+      sigma(2,1,2)=0.0
+      sigma(2,1,3)=0.0
+      sigma(2,2,2)=0.1196
+      sigma(2,2,3)=0.0
+      sigma(2,3,3)=0.1196
+      sigma(2,2,1)=sigma(2,1,2)
+      sigma(2,3,1)=sigma(2,1,3)
+      sigma(2,3,2)=sigma(2,2,3)
+      
+      sigma(3,1,1)=0.0002
+      sigma(3,1,2)=0.0
+      sigma(3,1,3)=0.0
+      sigma(3,2,2)=0.0002
+      sigma(3,2,3)=0.0
+      sigma(3,3,3)=0.0002
+      sigma(3,2,1)=sigma(2,1,2)
+      sigma(3,3,1)=sigma(2,1,3)
+      sigma(3,3,2)=sigma(2,2,3)
 
 c  write out the phase electrical conductivity tensors
       do 11 i=1,nphase 
@@ -228,6 +206,9 @@ c  write out the phase electrical conductivity tensors
 11    continue
 
 c  (USER) Set applied electric field.
+          ex=1.0
+          ey=1.0
+          ez=1.0
       write(7,*) 'Applied field components:'
       write(7,*) 'ex = ',ex,' ey = ',ey,' ez = ',ez
 
@@ -253,7 +234,7 @@ c  (USER) kmax is the maximum number of times dembx will be called, with
 c  ldemb conjugate gradient steps done during each call. The total
 c  number of conjugate gradient cycles allowed for a given conductivity
 c  computation is kmax*ldemb.
-c        kmax=40
+        kmax=40
         ldemb=50
         ltot=0
 
@@ -265,8 +246,7 @@ c  gg is the norm squared of the gradient (gg=gb*gb)
         gg=gg+gb(m)*gb(m)
 100     continue
 	write(7,*) 'Initial energy = ',utot,'gg = ',gg
-	print*, 'Initial energy = ',utot,' gg = ',gg
-c       call flush(7)
+        call flush(7)
 
         do 5000 kkk=1,kmax
 c  Call dembx to go into conjugate gradient solver
@@ -277,36 +257,30 @@ c  will be the final energy. If gg is still larger than gtest, then this
 c  will give an intermediate energy with which to check how the relaxation 
 c  process is coming along.
         call energy(nx,ny,nz,ns,utot)
-	write(7,*) 'Energy = ',utot,'gg = ',gg
+	write(7,*) 'average = ',(currx + curry + currz)/3,'gg = ',gg
 	write(7,*) ltot, ' conj. grad. steps'
-	print*, 'Energy = ',utot,' gg = ',gg
-	print*, 'Number of conjugate steps  = ',ltot
         if(gg.lt.gtest) goto 444
 
 c  If relaxation process will continue, compute and output currents as an
 c  additional aid to judge how the relaxation procedure if progressing.
-       call current(nx,ny,nz,ns,0)
+       call current(nx,ny,nz,ns)
 c Output intermediate currents
         write(7,*)
 	write(7, *) ' Current in x direction = ',currx
 	write(7, *) ' Current in y direction = ',curry
 	write(7, *) ' Current in z direction = ',currz
-	
-c        call flush(7)
+        call flush(7)
 
 5000   continue
 
-444    call current(nx,ny,nz,ns,iwriteFlag)
+444    call current(nx,ny,nz,ns)
 
 c Output final currents
         write(7,*)
 	write(7, *) ' Current in x direction = ',currx
 	write(7, *) ' Current in y direction = ',curry
 	write(7, *) ' Current in z direction = ',currz
-	print*, ' Current in x direction = ',currx
-	print*, ' Current in y direction = ',curry
-	print*, ' Current in z direction = ',currz
-c        call flush(7)
+        call flush(7)
 
 8000    continue
 
@@ -317,13 +291,13 @@ c  voltages, and constant term C that appear in the total energy due
 c  to the periodic boundary conditions.
 
       subroutine femat(nx,ny,nz,ns,nphase)
-      real dk(100,8,8),xn(8),b(8000000),C
+      real dk(100,8,8),xn(8),b(11520000),C
       real dndx(8),dndy(8),dndz(8)
       real g(3,3,3),sigma(100,3,3)
       real es(3,8)
       integer is(8)
-      integer*4 ib(8000000,27)
-      integer*2 pix(8000000)
+      integer*4 ib(11520000,27)
+      integer*2 pix(11520000)
 
 	common/list2/ex,ey,ez
 	common/list3/ib
@@ -621,12 +595,12 @@ c  x=nx y=ny z=nz corner
 c  Subroutine computes the total energy, utot, and gradient, gb
 
       subroutine energy(nx,ny,nz,ns,utot)
-	real u(8000000),gb(8000000)
-	real b(8000000),C
+	real u(11520000),gb(11520000)
+	real b(11520000),C
 	real dk(100,8,8)
 	real utot
- 	integer*4 ib(8000000,27)
-        integer*2 pix(8000000)
+ 	integer*4 ib(11520000,27)
+        integer*2 pix(11520000)
 	
 	common/list2/ex,ey,ez
 	common/list3/ib
@@ -697,10 +671,10 @@ c  terms from the global matrix A using only the small stiffness matrices.
 c    Subroutine that carries out the conjugate gradient relaxation process
 
       subroutine dembx(ns,Lstep,gg,dk,gtest,ldemb,kkk)
-      real u(8000000),gb(8000000),dk(100,8,8)    
-      real Ah(8000000),h(8000000),B,lambda,gamma
-      integer*4 ib(8000000,27)
-      integer*2 pix(8000000)
+      real u(11520000),gb(11520000),dk(100,8,8)    
+      real Ah(11520000),h(11520000),B,lambda,gamma
+      integer*4 ib(11520000,27)
+      integer*2 pix(11520000)
 
 	common/list3/ib
         common/list4/pix
@@ -809,14 +783,13 @@ c  the global matrix A using only the small stiffness matrices.
 
 c Subroutine that computes average current in three directions
 
-      subroutine current(nx,ny,nz,ns,iwriteFlag)
+      subroutine current(nx,ny,nz,ns)
 
       real af(3,8)
-      real u(8000000),uu(8)
+      real u(11520000),uu(8)
       real sigma(100,3,3)
-      integer*4 ib(8000000,27)
-      integer*2 pix(8000000)
-	integer*4 nnss;
+      integer*4 ib(11520000,27)
+      integer*2 pix(11520000)
 
 	common/list1/currx,curry,currz
 	common/list2/ex,ey,ez
@@ -826,7 +799,6 @@ c Subroutine that computes average current in three directions
 	common/list8/sigma
 
       nxy=nx*ny
-	nnss = (nx-2)*(ny-2)*(nz-2);
 c  af is the average field matrix, average field in a pixel is af*u(pixel).
 c  The matrix af relates the nodal voltages to the average field in the pixel.
 
@@ -862,12 +834,9 @@ c  now compute current in each pixel
       curry=0.0
       currz=0.0
 c  compute average field in each pixel
-
-	if(iwriteFlag .eq. 1) open(unit=3, file='currField.dat')
-
-      do 470 k=2,nz-1
-      do 470 j=2,ny-1
-      do 470 i=2,nx-1
+      do 470 k=1,nz
+      do 470 j=1,ny
+      do 470 i=1,nx
       m=(k-1)*nxy+(j-1)*nx+i
 c  load in elements of 8-vector using pd. bd. conds.
       uu(1)=u(m) 
@@ -913,18 +882,12 @@ c  sum into the global average currents
       currx=currx+cur1
       curry=curry+cur2
       currz=currz+cur3
-
-	if(iwriteFlag .eq. 1) write(3,6070) cur1, cur2, cur3
-6070	format(3(e12.5, 2x))
-
 470   continue
 
 c Volume average currents
-      currx=currx/float(nnss)
-      curry=curry/float(nnss)
-      currz=currz/float(nnss)
-
-	if(iwriteFlag .eq. 1) close(3)
+      currx=currx/float(ns)
+      curry=curry/float(ns)
+      currz=currz/float(ns)
 
       return
       end
@@ -934,7 +897,7 @@ c  Subroutine that counts phase volume fractions
       subroutine assig(ns,nphase,prob)
 
       integer ns,nphase
-      integer*2 pix(8000000)
+      integer*2 pix(11520000)
       real prob(100)
       common/list4/pix
 
@@ -959,9 +922,8 @@ c  Subroutine that counts phase volume fractions
 c  Subroutine that sets up microstructural image
 
       subroutine ppixel(nx,ny,nz,ns,nphase)
-      integer*2 pix(8000000)
+      integer*2 pix(11520000)
       common/list4/pix
-c	integer*2 itmp
 
 c  (USER) If you want to set up a test image inside the program, instead
 c  of reading it in from a file, this should be done inside this subroutine.
@@ -971,7 +933,6 @@ c  of reading it in from a file, this should be done inside this subroutine.
       do 100 i=1,nx 
       m=nx*ny*(k-1)+nx*(j-1)+i
       read(9,*) pix(m)
-	pix(m)=pix(m)+1;
 100   continue
 
 c  Check for wrong phase labels--less than 1 or greater than nphase
@@ -980,7 +941,6 @@ c  Check for wrong phase labels--less than 1 or greater than nphase
         write(7,*) 'Phase label in pix < 1--error at ',m
        end if
        if(pix(m).gt.nphase) then
-	  write(*,*) pix(m)
         write(7,*) 'Phase label in pix > nphase--error at ',m
        end if
 500    continue

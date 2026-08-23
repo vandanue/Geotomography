@@ -1,19 +1,4 @@
-c  ***********************  EMC3D.f  ***********************************
-c  This program is a modified version of "elas3d.f", which was developed
-c  and distributed by Garboczi and others from NIST. 
-c  
-c  Adding fuctionalities are not major. 
-c   (1) File IO (input/output/stress field output files)
-c   (2) Calculation of properties assuming isotropic & elastic media.
-
-c  Current version can handle upto 8 million cells, or equivalent to
-c               200x200x200 size.
-c
-c  Following is the original documentation from NIST.
-c  
-c  Youngseuk Keehm, 2003-05
-c
-c-----------------------
+c  ***********************  elas3d.f  ***********************************
 c  BACKGROUND
 
 c  This program solves the linear elastic equations in a 
@@ -63,19 +48,15 @@ c  STRONGLY SUGGESTED:  READ THE MANUAL BEFORE USING PROGRAM!!
 
 c  (USER) Change these dimensions and in other subroutines at same time.
 c  For example, search and replace all occurrences throughout the 
-c  program of "(8000000" by "(64000", to go from a 
-c  20 x 20 x 20 system to a 40 x 40 x 40 system.
-	real u(8000000,3),gb(8000000,3),b(8000000,3)
-      real h(8000000,3),Ah(8000000,3)
+c  program of "(27000" by "(64000", to go from a 
+c  30 x 30 x 30 system to a 40 x 40 x 40 system.
+	real u(27000,3),gb(27000,3),b(27000,3)
+        real h(27000,3),Ah(27000,3)
 	real cmod(100,6,6),dk(100,8,3,8,3)
-	real phasemod(100,2),prob(100), density(100)
-	real fdensity, fporosity, BulkM, ShearM
-
-
-	integer in(27),jn(27),kn(27),iwriteFlag
-	integer*4 ib(8000000,27), nblank
-	integer*2 pix(8000000)
-	character*40 poreFileName
+	real phasemod(100,2),prob(100)
+	integer in(27),jn(27),kn(27)
+	integer*4 ib(27000,27)
+	integer*2 pix(27000)
 
 	common/list1/strxx,stryy,strzz,strxz,stryz,strxy
 	common/list2/exx,eyy,ezz,exz,eyz,exy
@@ -90,69 +71,27 @@ c  20 x 20 x 20 system to a 40 x 40 x 40 system.
 
 c (USER) Unit 9 is the microstructure input file, 
 c  unit 7 is the results output file.
-	open (unit=8, file='emc3d.pam')
-      
-      open (unit=7,file='outputfile.out')
-
-
-	read(8,'(a40)') poreFileName
-	write(*,7901) poreFileName
-7901  format(' Pore File Name : ', a40)
-
-	read(8,*) nx, ny, nz
-	write(*,7902) nx, ny, nz
-7902  format(' (NX, NY, NZ) : ',3i5)
-
-	read(8,*) gtest
-	write(*,7903) gtest
-7903  format(' Convergence criteria: ',e12.5)
-
-	read(8,*) nblank
-	write(*,7904) nblank
-7904  format(' No. of Header line : ',i5)
-
-	read(8,*) iwriteFlag
-	write(*,7905) iwriteFlag
-7905  format(' Write Stress Field (0=no, 1=yes) : ',i3)
-
-	read(8,*) nphase
-	write(*,7906) nphase
-7906  format(' No. of Phases', i3)
-
-	do 6060 n=1,nphase
-		read(8,*) phasemod(n,1), phasemod(n,2), density(n)
-		write(*,7907) n, phasemod(n,1), phasemod(n,2), density(n)
-6060  continue
-7907  format(i2,' phase (K,mu,density) : ', 3(e12.5,1x))
-	
-	read(8,*) exx,eyy,ezz,exz,eyz,exy
-	print*, 'Applied Strain :'
-	write(*,7908) exx,eyy,ezz,exz,eyz,exy
-7908  format(3x,6(e12.5,1x))
-
-	close(8)
-
-	open (unit=9,file=poreFileName)
+        open (unit=9,file='Data.txt')
+        open (unit=7,file='outputfile.out')
 
 c (USER)  nx,ny,nz give the size of the lattice
-c        nx=200
-c        ny=200
-c        nz=200
+        nx=30
+        ny=30
+        nz=30
 c ns=total number of sites
         ns=nx*ny*nz
       write(7,9010) nx,ny,nz,ns
-9010  format('nx= ',i4,' ny= ',i4,' nz= ',i4,' ns= ',i8)
-      gtest = gtest*ns
+9010  format('nx= ',i4,' ny= ',i4,' nz= ',i4,' ns= 'i8)
 
 c  (USER) nphase is the number of phases being considered in the problem.
 c  The values of pix(m) will run from 1 to nphase.
-c	nphase=2
+	nphase=2
 
 c  (USER) gtest is the stopping criterion, the number 
 c  to which the quantity gg=gb*gb is compared.
 c  Usually gtest = abc*ns, so that when gg < gtest, the rms value
 c  per pixel of gb is less than sqrt(abc). 
-c       gtest=1.e-7*ns
+        gtest=1.e-12*ns
 
 c  (USER)
 c  The parameter phasemod(i,j) is the bulk (i,1) and shear (i,2) moduli of 
@@ -163,19 +102,19 @@ c  moduli.  For anisotropic elastic material, one can directly input
 c  the elastic moduli tensor cmod in subroutine femat, and skip this part.
 c  If you wish to input in terms of bulk (1) and shear (2), then make sure
 c  to comment out the do 1144 loop.
-c	phasemod(1,1)=2.2
-c	phasemod(1,2)=0.0
-c	phasemod(2,1)=36.6
-c	phasemod(2,2)=44.0
+	phasemod(1,1)=1.0
+	phasemod(1,2)=1.0
+	phasemod(2,1)=20.0
+	phasemod(2,2)=1.0
+    	
 
-c---------------------------------**********************___________________
 c  (USER) Program uses bulk modulus (1) and shear modulus (2), so transform 
 c  Young's modulis (1) and Poisson's ratio (2).
-c        do 1144 i=1,nphase
-c        save=phasemod(i,1)
-c        phasemod(i,1)=phasemod(i,1)/3./(1.-2.*phasemod(i,2))
-c        phasemod(i,2)=save/2./(1.+phasemod(i,2))
-c1144    continue
+        do 1144 i=1,nphase
+        save=phasemod(i,1)
+        phasemod(i,1)=phasemod(i,1)/3./(1.-2.*phasemod(i,2))
+        phasemod(i,2)=save/2./(1.+phasemod(i,2))
+1144    continue
 
 c  Construct the neighbor table, ib(m,n)
 
@@ -245,10 +184,10 @@ c Compute the average stress and strain in each microstructure.
 c (USER) npoints is the number of microstructures to use.
 
         npoints=1
-        do 8000 micro=1,npoints
+        do 27000 micro=1,npoints
 c  Read in a microstructure in subroutine ppixel, and set up pix(m)
 c  with the appropriate phase assignments.
-        call ppixel(nx,ny,nz,ns,nphase,nblank)
+        call ppixel(nx,ny,nz,ns,nphase)
 c Count and output the volume fractions of the different phases
         call assig(ns,nphase,prob)
         do 111 i=1,nphase 
@@ -260,21 +199,17 @@ c Count and output the volume fractions of the different phases
 	write(7,9065) i,prob(i)
 9065	format(' Volume fraction of phase ',i3,'  is ',f8.5)
 8050	continue
-	fporosity = prob(1)
 
 c  (USER) Set applied strains
 c  Actual shear strain applied in do 1050 loop is exy, exz, and eyz as
 c  given in the statements below.  The engineering shear strain, by which
 c  the shear modulus is usually defined, is twice these values.
-c        exx=0.002
-c        eyy=0.002
-c        ezz=0.002
-c        exz=0.002/2.
-c        eyz=0.004/2.
-c        exy=0.006/2.
-	exz = exz/2.
-	eyz = eyz/2.
-	exy	= exy/2.
+        exx=0.1
+        eyy=0.1
+        ezz=0.1
+        exz=0.1/2.
+        eyz=0.2/2.
+        exy=0.3/2.
         write(7,*) 'Applied engineering strains'
         write(7,*) ' exx eyy ezz exz eyz exy'
         write(7,*) exx,eyy,ezz,2.*exz,2.*eyz,2.*exy
@@ -305,7 +240,7 @@ c  (USER) kmax is the maximum number of times dembx will be called, with
 c  ldemb conjugate gradient steps performed during each call.  The total
 c  number of conjugate gradient steps allowed for a given elastic
 c  computation is kmax*ldemb.
-        kmax=50
+        kmax=40
         ldemb=50
         ltot=0
 c  Call energy to get initial energy and initial gradient
@@ -317,7 +252,7 @@ c  gg is the norm squared of the gradient (gg=gb*gb)
         gg=gg+gb(m,m3)*gb(m,m3)
 100     continue
 	write(7,*) 'Initial energy = ',utot,' gg = ',gg
-c        call flush(7)
+        call flush(7)
 
         do 5000 kkk=1,kmax
 c  call dembx to go into the conjugate gradient solver
@@ -330,54 +265,25 @@ c  relaxation process is coming along.
         call energy(nx,ny,nz,ns,utot)
 	write(7,*) 'Energy = ',utot,' gg = ',gg
 	write(7,*) 'Number of conjugate steps  = ',ltot
-c       call flush(7)
+        call flush(7)
 c  If relaxation process is finished, jump out of loop
         if(gg.le.gtest) goto 444
 c  If relaxation process will continue, compute and output stresses
 c  and strains as an additional aid to judge how the 
 c  relaxation procedure is progressing.
-	call stress(nx,ny,nz,ns,0)
+	call stress(nx,ny,nz,ns)
         write(7,*) ' stresses:  xx,yy,zz,xz,yz,xy'
 	write(7,*) strxx,stryy,strzz,strxz,stryz,strxy
         write(7,*) ' strains:  xx,yy,zz,xz,yz,xy'
 	write(7,*) sxx,syy,szz,sxz,syz,sxy
-c        call flush(7)
+        call flush(7)
 5000    continue
 
-444     call stress(nx,ny,nz,ns,iwriteFlag)
-      
-	write(7,*)
-	write(7,*) ' stresses:  xx,yy,zz,xz,yz,xy'
-	write(7,6072) strxx,stryy,strzz,strxz,stryz,strxy
-      write(7,*) ' strains:  xx,yy,zz,xz,yz,xy'
-	write(7,6072) sxx,syy,szz,sxz,syz,sxy
-	write(7,*)
-
-6072	format(6(e12.5, 2x))
-	
-	BulkM  = (strxx+stryy+strzz)/(sxx+syy+szz)/3.0
-	ShearM = (strxz/sxz + stryz/syz + strxy/sxy)/3.0
-	fdensity = 0.0;
-	do 6061 n=1,nphase
-		fdensity = fdensity + density(n)*prob(n)
-6061	continue
-
-6071  format(a10,f12.5)
-	write(7,6071) 'K       : ', BulkM
-	write(7,6071) 'G       : ', ShearM
-	write(7,6071) 'density : ', fdensity
-	write(7,6071) 'Porosity: ', fporosity
-	write(7,6071) 'Vp      : ', sqrt((BulkM+4.0/3.0*ShearM)/fdensity)
-	write(7,6071) 'Vs      : ', sqrt(ShearM/fdensity)
-	write(7,6071) 'E       : ', 9.0*BulkM*ShearM/(3.0*BulkM+ShearM)
-	write(7,6071) 'Poisson : ',(3.*BulkM-2.*ShearM)/
-     &                           (6.*BulkM+2.*ShearM)
-
-c	open(unit = 8, file = 'tResult.txt', status = 'unknown')
-c	write(8, 6969) fporosity, BulkM, ShearM, 
-c     &   sqrt((BulkM+4.0/3.0*ShearM)/fdensity),sqrt(ShearM/fdensity)
-c6969  format(5(e12.5, 2x))
-c	close(8)
+444     call stress(nx,ny,nz,ns)
+        write(7,*) ' stresses:  xx,yy,zz,xz,yz,xy'
+	write(7,*) strxx,stryy,strzz,strxz,stryz,strxy
+        write(7,*) ' strains:  xx,yy,zz,xz,yz,xy'
+	write(7,*) sxx,syy,szz,sxz,syz,sxy
 
 8000    continue
 	
@@ -390,11 +296,11 @@ c  due to the periodic boundary conditions
 
       subroutine femat(nx,ny,nz,ns,phasemod,nphase)
       real dk(100,8,3,8,3),phasemod(100,2),dndx(8),dndy(8),dndz(8)
-      real b(8000000,3),g(3,3,3),C,ck(6,6),cmu(6,6),cmod(100,6,6)
+      real b(27000,3),g(3,3,3),C,ck(6,6),cmu(6,6),cmod(100,6,6)
       real es(6,8,3),delta(8,3)
       integer is(8)
-      integer*4 ib(8000000,27)
-      integer*2 pix(8000000)
+      integer*4 ib(27000,27)
+      integer*2 pix(27000)
 
 	common/list2/exx,eyy,ezz,exz,eyz,exy
 	common/list3/ib
@@ -847,11 +753,11 @@ c  Subroutine computes the total energy, utot, and the gradient, gb
 
       subroutine energy(nx,ny,nz,ns,utot)
 	
-	real u(8000000,3),gb(8000000,3)
-	real b(8000000,3),C,utot
+	real u(27000,3),gb(27000,3)
+	real b(27000,3),C,utot
 	real dk(100,8,3,8,3)
- 	integer*4 ib(8000000,27)
- 	integer*2 pix(8000000)
+ 	integer*4 ib(27000,27)
+ 	integer*2 pix(27000)
 	
 	common/list2/exx,eyy,ezz,exz,eyz,exy
 	common/list3/ib
@@ -940,11 +846,11 @@ c  the global matrix A using only the small stiffness matrices.
 c  Subroutine that carries out the conjugate gradient relaxation process
 
       subroutine dembx(ns,Lstep,gg,dk,gtest,ldemb,kkk)       
-      real gb(8000000,3),u(8000000,3),dk(100,8,3,8,3)    
-      real h(8000000,3),Ah(8000000,3)
+      real gb(27000,3),u(27000,3),dk(100,8,3,8,3)    
+      real h(27000,3),Ah(27000,3)
       real lambda,gamma
-      integer*4 ib(8000000,27)
-      integer*2 pix(8000000) 
+      integer*4 ib(27000,27)
+      integer*2 pix(27000) 
 
       common/list3/ib
       common/list4/pix
@@ -1073,11 +979,11 @@ c  the global matrix A using only the small stiffness matrices dk.
 c  Subroutine that computes the six average stresses and six 
 c  average strains.
 
-      subroutine stress(nx,ny,nz,ns,iwriteFlag)
-      real u(8000000,3),gb(8000000,3),uu(8,3)
+      subroutine stress(nx,ny,nz,ns)
+      real u(27000,3),gb(27000,3),uu(8,3)
       real dndx(8),dndy(8),dndz(8),es(6,8,3),cmod(100,6,6)
-      integer*4 ib(8000000,27)
-      integer*2 pix(8000000)
+      integer*4 ib(27000,27)
+      integer*2 pix(27000)
 
 	common/list1/strxx,stryy,strzz,strxz,stryz,strxy
 	common/list2/exx,eyy,ezz,exz,eyz,exy
@@ -1150,10 +1056,6 @@ c  Compute components of the average stress and strain tensors in each pixel
       sxz=0.0
       syz=0.0
       sxy=0.0
-
-	if(iwriteFlag .eq. 1) open(unit=3, file='stressField.dat')
-	
-
       do 470 k=1,nz
       do 470 j=1,ny
       do 470 i=1,nx
@@ -1257,14 +1159,6 @@ c  sum local strains and stresses into global values
       sxz=sxz+s13
       syz=syz+s23
       sxy=sxy+s12
-
-	if(iwriteFlag .eq. 1) write(3,6070) str11, str22, str33, str13, 
-     &	str23, str12
-	
-6070	format(6(e12.5, 2x))
-
-
-
 470   continue
 
 c  Volume average of global stresses and strains
@@ -1287,7 +1181,7 @@ c  Volume average of global stresses and strains
 c  Subroutine that counts volume fractions
 
       subroutine assig(ns,nphase,prob)
-      integer*2 pix(8000000)
+      integer*2 pix(27000)
       real prob(100)
 
       common/list4/pix
@@ -1312,25 +1206,19 @@ c  Subroutine that counts volume fractions
 
 c  Subroutine that sets up microstructural image
 
-      subroutine ppixel(nx,ny,nz,ns,nphase,nblank)
-      integer*2 pix(8000000)
+      subroutine ppixel(nx,ny,nz,ns,nphase)
+      integer*2 pix(27000)
       common/list4/pix
 
 c  (USER)  If you want to set up a test image inside the program, instead of
 c  reading it in from a file, this should be done inside this subroutine.
 
       nxy=nx*ny
-
-	do 291 k=1,nblank
-	read(9,*)
-291   continue
-
       do 200 k=1,nz
       do 200 j=1,ny
       do 200 i=1,nx 
       m=nxy*(k-1)+nx*(j-1)+i
       read(9,*) pix(m)
-	pix(m) = pix(m) + 1
 200   continue
 
 c  Check for wrong phase labels--less than 1 or greater than nphase
